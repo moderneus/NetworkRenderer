@@ -1,7 +1,9 @@
-import print;
+#include "engine/Engine.hpp"
 
-int main()
+int main() 
 {
-	print::print_hello();
-	print::print_bye();
+	engine::Engine engine;
+	engine.Init();
+	engine.Run();
+	engine.Destroy();
 }
