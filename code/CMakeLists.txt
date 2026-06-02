@@ -3,33 +3,29 @@ cmake_minimum_required(VERSION 4.2)
 set(CMAKE_CXX_COMPILER clang++)
 set(CMAKE_C_COMPILER clang)
 
-set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-set(TARGET Renderer)
+set(PROJECT Renderer)
 
-project(${TARGET})
+project(${PROJECT})
 
 find_package(Vulkan REQUIRED)
 
-file(GLOB_RECURSE INTERFACES CONFIGURE_DEPENDS "modules/*.cppm")
-file(GLOB_RECURSE IMPLEMENTATION CONFIGURE_DEPENDS "modules/*.cpp")
+add_subdirectory(libs/fmt ${CMAKE_BINARY_DIR}/libs/fmt)
+add_subdirectory(libs/glm ${CMAKE_BINARY_DIR}/libs/glm)
+add_subdirectory(libs/SDL ${CMAKE_BINARY_DIR}/libs/SDL)
 
-add_executable(${TARGET} src/Main.cpp)
+file(GLOB_RECURSE SRC "src/*.cpp")
 
-target_sources(${TARGET}
-  PRIVATE
-    ${IMPLEMENTATION}
-  PUBLIC
-  FILE_SET CXX_MODULES
-  BASE_DIRS modules 
-  FILES
-    ${INTERFACES}
+add_executable(${PROJECT} ${SRC})
 
-)
+target_compile_options(${PROJECT} PRIVATE --std=c++20 -g -O1 -Wall -Werror)
+target_include_directories(${PROJECT} PRIVATE include libs/fmt/include libs/glm libs/SDL/include libs/vma/include) 
+target_link_libraries(${PROJECT} PRIVATE Vulkan::Vulkan fmt::fmt glm::glm SDL3::SDL3)
 
-target_compile_options(${TARGET} PRIVATE --std=c++23 -fmodules -g -O1 -Wall -Werror)
-
-target_link_libraries(${TARGET} PRIVATE Vulkan::Vulkan)
+file(GLOB_RECURSE DYNAMIC_LIBS ${CMAKE_BINARY_DIR}/libs/*.so)
+file(COPY ${DYNAMIC_LIBS} DESTINATION ${CMAKE_BINARY_DIR})
+file(COPY assets DESTINATION ${CMAKE_BINARY_DIR})
