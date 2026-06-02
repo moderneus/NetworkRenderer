@@ -26,6 +26,10 @@ target_compile_options(${PROJECT} PRIVATE --std=c++20 -g -O1 -Wall -Werror)
 target_include_directories(${PROJECT} PRIVATE include libs/fmt/include libs/glm libs/SDL/include libs/vma/include) 
 target_link_libraries(${PROJECT} PRIVATE Vulkan::Vulkan fmt::fmt glm::glm SDL3::SDL3)
 
-file(GLOB_RECURSE DYNAMIC_LIBS ${CMAKE_BINARY_DIR}/libs/*.so)
+if(WIN32)
+	file(GLOB_RECURSE DYNAMIC_LIBS ${CMAKE_BINARY_DIR}/libs/*.dll)
+elseif(LINUX)
+	file(GLOB_RECURSE DYNAMIC_LIBS ${CMAKE_BINARY_DIR}/libs/*.so)
+endif()
+
 file(COPY ${DYNAMIC_LIBS} DESTINATION ${CMAKE_BINARY_DIR})
-file(COPY assets DESTINATION ${CMAKE_BINARY_DIR})
