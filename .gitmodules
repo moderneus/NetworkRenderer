@@ -1,0 +1,12 @@
+[submodule "code/libs/fmt"]
+	path = code/libs/fmt
+	url = https://github.com/fmtlib/fmt.git
+[submodule "code/libs/glm"]
+	path = code/libs/glm
+	url = https://github.com/g-truc/glm.git
+[submodule "code/libs/vma"]
+	path = code/libs/vma
+	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git
+[submodule "code/libs/SDL"]
+	path = code/libs/SDL
+	url = https://github.com/libsdl-org/SDL.git
