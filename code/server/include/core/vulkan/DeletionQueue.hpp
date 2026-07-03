@@ -6,12 +6,12 @@
 namespace core::vk {
 
 class DeletionQueue {
-	private:
-		std::deque<std::function<void()>> deletionQueue;
+private:
+  std::deque<std::function<void()>> deletionQueue;
 
-	public:
-		void Push(std::function<void()>);
-		void CleanUp();
+public:
+  void Push(std::function<void()>);
+  void CleanUp();
 };
 
 }
