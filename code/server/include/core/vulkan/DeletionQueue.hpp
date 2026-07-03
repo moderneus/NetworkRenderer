@@ -1,7 +1,7 @@
 #pragma once
 
-#include <functional>
 #include <deque>
+#include <functional>
 
 namespace core::vk {
 
@@ -14,4 +14,4 @@ public:
   void CleanUp();
 };
 
-}
+} // namespace core::vk

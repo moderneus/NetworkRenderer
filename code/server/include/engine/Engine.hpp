@@ -16,4 +16,4 @@ public:
   void Destroy();
 };
 
-}
+} // namespace engine

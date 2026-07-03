@@ -1,5 +1,3 @@
 #include "engine/gfx/Renderer.hpp"
 
-void engine::gfx::Renderer::Draw() {
-
-}
+void engine::gfx::Renderer::Draw() {}

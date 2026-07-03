@@ -1,5 +1,3 @@
 #include <iostream>
 
-int main() {
-  std::cout << "Hello Client!" << std::endl;
-}
+int main() { std::cout << "Hello Client!" << std::endl; }

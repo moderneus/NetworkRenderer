@@ -7,4 +7,4 @@ public:
   void Draw();
 };
 
-}
+} // namespace engine::gfx

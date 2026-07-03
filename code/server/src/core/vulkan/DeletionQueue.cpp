@@ -5,7 +5,7 @@ void core::vk::DeletionQueue::Push(std::function<void()> destroyFunction) {
 }
 
 void core::vk::DeletionQueue::CleanUp() {
-  for(auto it = deletionQueue.rbegin(); it != deletionQueue.rend(); ++it) {
+  for (auto it = deletionQueue.rbegin(); it != deletionQueue.rend(); ++it) {
     (*it)();
   }
 }
