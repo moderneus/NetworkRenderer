@@ -8,7 +8,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-set(PROJECT Renderer)
+set(PROJECT NetworkRenderer)
 
 project(${PROJECT})
 
@@ -18,13 +18,8 @@ add_subdirectory(libs/fmt ${CMAKE_BINARY_DIR}/libs/fmt)
 add_subdirectory(libs/glm ${CMAKE_BINARY_DIR}/libs/glm)
 add_subdirectory(libs/SDL ${CMAKE_BINARY_DIR}/libs/SDL)
 
-file(GLOB_RECURSE SRC "src/*.cpp")
-
-add_executable(${PROJECT} ${SRC})
-
-target_compile_options(${PROJECT} PRIVATE --std=c++20 -g -O1 -Wall -Werror)
-target_include_directories(${PROJECT} PRIVATE include libs/fmt/include libs/glm libs/SDL/include libs/vma/include) 
-target_link_libraries(${PROJECT} PRIVATE Vulkan::Vulkan fmt::fmt glm::glm SDL3::SDL3)
+add_subdirectory(server)
+add_subdirectory(client)
 
 if(WIN32)
 	file(GLOB_RECURSE DYNAMIC_LIBS ${CMAKE_BINARY_DIR}/libs/*.dll)
