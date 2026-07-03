@@ -1,8 +1,10 @@
 #pragma once
 
 namespace engine::gfx {
-	class Renderer {
-	public:
-		void Draw();
-	};
+
+class Renderer {
+public:
+  void Draw();
+};
+
 }
