@@ -9,7 +9,7 @@
   do {                                                                         \
     VkResult err = x;                                                          \
     if (err) {                                                                 \
-      fmt::print("[VULKAN] ERROR: {}\n", string_VkResult(err));                \
+      fmt::print(fmt::fg(fmt::color::dark_red), "[VULKAN] ERROR: {}\n", string_VkResult(err));                \
       abort();                                                                 \
     }                                                                          \
   } while (0)
