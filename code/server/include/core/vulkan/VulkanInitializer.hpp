@@ -1,8 +1,8 @@
 #pragma once
 
 #include "core/vulkan/DeletionQueue.hpp"
+#include "core/vulkan/VulkanHelper.hpp"
 
-#include <vector>
 #include <vulkan/vulkan.h>
 
 namespace core::vk {
@@ -10,11 +10,11 @@ namespace core::vk {
 class VulkanInitializer {
 private:
   DeletionQueue deletionQueue;
+  VulkanHelper vulkanHelper;
 
   VkInstance instance;
-  // VkDebugUtilsMessengerEXT debugMessenger;
-
-  bool CheckValidationLayerSupport(const std::vector<const char *> layerNames);
+  VkDebugUtilsMessengerEXT debugMessenger;
+  VkDebugUtilsMessengerCreateInfoEXT debugMessengerInfo;
 
   void CreateInstance();
   void CreateDebugMessenger();
