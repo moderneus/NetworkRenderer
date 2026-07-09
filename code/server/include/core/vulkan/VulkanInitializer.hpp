@@ -15,9 +15,11 @@ private:
   VkInstance instance;
   VkDebugUtilsMessengerEXT debugMessenger;
   VkDebugUtilsMessengerCreateInfoEXT debugMessengerInfo;
+  VkPhysicalDevice physicalDevice;
 
   void CreateInstance();
   void CreateDebugMessenger();
+  void PickPhysicalDevice();
 
 public:
   void Init();

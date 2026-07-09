@@ -17,7 +17,7 @@ bool core::vk::VulkanHelper::CheckValidationLayersSupport(
   bool isFound = false;
 
   for (const char *layerName : layerNames) {
-    for (auto layer : availableLayers) {
+    for (const auto &layer : availableLayers) {
       if (strcmp(layerName, layer.layerName) == 0)
         isFound = true;
     }
@@ -38,7 +38,7 @@ bool core::vk::VulkanHelper::CheckExtensionsSupport(
   bool isFound = false;
 
   for (const char *extensionName : extensionNames) {
-    for (auto extension : availableExtensions) {
+    for (const auto &extension : availableExtensions) {
       if (strcmp(extensionName, extension.extensionName) == 0)
         isFound = true;
     }

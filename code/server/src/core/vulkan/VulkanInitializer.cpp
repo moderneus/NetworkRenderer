@@ -2,6 +2,7 @@
 #include "utils/Defines.hpp"
 
 #include <cstdint>
+#include <map>
 
 void core::vk::VulkanInitializer::CreateInstance() {
   VkApplicationInfo appInfo{
@@ -84,9 +85,48 @@ void core::vk::VulkanInitializer::CreateDebugMessenger() {
   });
 }
 
+void core::vk::VulkanInitializer::PickPhysicalDevice() {
+  std::uint32_t physicalDeviceCount = 0;
+  vkEnumeratePhysicalDevices(instance, &physicalDeviceCount, nullptr);
+
+  std::vector<VkPhysicalDevice> physicalDevices(physicalDeviceCount);
+  vkEnumeratePhysicalDevices(
+      instance, &physicalDeviceCount, physicalDevices.data());
+
+  if (!physicalDeviceCount)
+    fmt::print(fmt::fg(fmt::color::dark_red),
+        "[VULKAN] Failed to pick a PhysicalDevice: there is no one with Vulkan "
+        "support\n");
+
+  if (physicalDeviceCount == 1) {
+    physicalDevice = physicalDevices[0];
+    return;
+  }
+
+  std::multimap<std::uint32_t, VkPhysicalDevice> candidates;
+
+  for (const auto &physicalDevice : physicalDevices) {
+    std::uint32_t score = 0;
+
+    VkPhysicalDeviceProperties properties;
+    vkGetPhysicalDeviceProperties(physicalDevice, &properties);
+
+    if (properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
+      score += 1000;
+
+    score += properties.limits.maxSamplerAnisotropy;
+    score += properties.limits.maxImageDimension2D;
+
+    candidates.insert(std::make_pair(score, physicalDevice));
+  }
+
+  physicalDevice = candidates.rbegin()->second;
+}
+
 void core::vk::VulkanInitializer::Init() {
   CreateInstance();
   CreateDebugMessenger();
+  PickPhysicalDevice();
 }
 
 void core::vk::VulkanInitializer::Destroy() { deletionQueue.CleanUp(); }
