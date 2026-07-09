@@ -9,6 +9,9 @@ namespace core::vk {
 
 class VulkanInitializer {
 private:
+  std::vector<const char *> layerNames = { "VK_LAYER_KHRONOS_validation" };
+  std::vector<const char *> extensionNames = { "VK_EXT_debug_utils" };
+
   DeletionQueue deletionQueue;
   VulkanHelper vulkanHelper;
 

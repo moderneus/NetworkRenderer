@@ -24,14 +24,10 @@ void core::vk::VulkanInitializer::CreateInstance() {
     .ppEnabledExtensionNames = nullptr,
   };
 
-  std::vector<const char *> layerNames = { "VK_LAYER_KHRONOS_validation" };
-
   if (vulkanHelper.CheckValidationLayersSupport(layerNames)) {
     info.enabledLayerCount = static_cast<std::uint32_t>(layerNames.size());
     info.ppEnabledLayerNames = layerNames.data();
   }
-
-  std::vector<const char *> extensionNames = { "VK_EXT_debug_utils" };
 
   if (vulkanHelper.CheckExtensionsSupport(extensionNames)) {
     info.enabledExtensionCount =
