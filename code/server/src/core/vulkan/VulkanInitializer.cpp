@@ -1,7 +1,6 @@
 #include "core/vulkan/VulkanInitializer.hpp"
 #include "utils/Defines.hpp"
 
-#include <cstdint>
 #include <map>
 
 void core::vk::VulkanInitializer::CreateInstance() {
@@ -74,7 +73,7 @@ void core::vk::VulkanInitializer::CreateDebugMessenger() {
 
     if (!pfnVkDestroyDebugUtilsMessengerEXT)
       fmt::print(fmt::fg(fmt::color::dark_red),
-          "[VULKAN] ERROR: Cannot destroy a DebugMessenger: "
+          "[VULKAN] ERROR: Cannot destroy a debug messenger: "
           "pfnVkDestroyDebugUtilsMessengerEXT is nullptr\n");
 
     pfnVkDestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
@@ -91,8 +90,8 @@ void core::vk::VulkanInitializer::PickPhysicalDevice() {
 
   if (!physicalDeviceCount)
     fmt::print(fmt::fg(fmt::color::dark_red),
-        "[VULKAN] Failed to pick a PhysicalDevice: there is no one with Vulkan "
-        "support\n");
+        "[VULKAN] ERROR: Failed to pick a physical device: there is no one "
+        "with Vulkan support\n");
 
   if (physicalDeviceCount == 1) {
     physicalDevice = physicalDevices[0];
@@ -117,6 +116,44 @@ void core::vk::VulkanInitializer::PickPhysicalDevice() {
   }
 
   physicalDevice = candidates.rbegin()->second;
+}
+
+void core::vk::VulkanInitializer::FindQueueFamily() {
+  std::uint32_t queueFamilyCount;
+  vkGetPhysicalDeviceQueueFamilyProperties(
+      physicalDevice, &queueFamilyCount, nullptr);
+
+  std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
+  vkGetPhysicalDeviceQueueFamilyProperties(
+      physicalDevice, &queueFamilyCount, queueFamilies.data());
+
+  for (std::uint32_t i = 0; i < queueFamilyCount; ++i) {
+    if (queueFamilies[i].queueFlags == VK_QUEUE_GRAPHICS_BIT)
+      gfxQueueFamilyIndex = i;
+  }
+
+  if (gfxQueueFamilyIndex == -1)
+    fmt::print(fmt::fg(fmt::color::dark_red),
+        "[VULKAN] ERROR: Failed to find a suitable queue famiy\n");
+}
+
+void core::vk::VulkanInitializer::CreateDevice() {
+  VkDeviceQueueCreateInfo queueInfo{
+    .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+    .queueFamilyIndex = gfxQueueFamilyIndex,
+    .queueCount = 1,
+    .pQueuePriorities = nullptr,
+  };
+
+  VkDeviceCreateInfo info{
+    .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+    .queueCreateInfoCount = 1,
+    .pQueueCreateInfos = &queueInfo,
+  };
+
+  VK_CHECK(vkCreateDevice(physicalDevice, &info, nullptr, &device));
+
+  vkGetDeviceQueue(device, gfxQueueFamilyIndex, 0, &gfxQueue);
 }
 
 void core::vk::VulkanInitializer::Init() {

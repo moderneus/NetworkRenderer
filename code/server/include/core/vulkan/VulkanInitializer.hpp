@@ -5,6 +5,8 @@
 
 #include <vulkan/vulkan.h>
 
+#include <cstdint>
+
 namespace core::vk {
 
 class VulkanInitializer {
@@ -15,14 +17,19 @@ private:
   DeletionQueue deletionQueue;
   VulkanHelper vulkanHelper;
 
-  VkInstance instance;
-  VkDebugUtilsMessengerEXT debugMessenger;
+  VkInstance instance = VK_NULL_HANDLE;
+  VkDebugUtilsMessengerEXT debugMessenger = VK_NULL_HANDLE;
   VkDebugUtilsMessengerCreateInfoEXT debugMessengerInfo;
-  VkPhysicalDevice physicalDevice;
+  VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
+  std::uint32_t gfxQueueFamilyIndex = -1;
+  VkQueue gfxQueue;
+  VkDevice device;
 
   void CreateInstance();
   void CreateDebugMessenger();
   void PickPhysicalDevice();
+  void FindQueueFamily();
+  void CreateDevice();
 
 public:
   void Init();
