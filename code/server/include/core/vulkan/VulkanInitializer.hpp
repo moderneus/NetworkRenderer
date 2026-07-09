@@ -5,6 +5,7 @@
 
 #include <vulkan/vulkan.h>
 
+#include <array>
 #include <cstdint>
 
 namespace core::vk {
@@ -22,6 +23,7 @@ private:
   VkDebugUtilsMessengerCreateInfoEXT debugMessengerInfo;
   VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
   std::uint32_t gfxQueueFamilyIndex = -1;
+  std::array<const float, 1> queuePriorities = { 1.0 };
   VkQueue gfxQueue;
   VkDevice device;
 

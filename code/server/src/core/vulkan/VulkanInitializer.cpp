@@ -128,7 +128,7 @@ void core::vk::VulkanInitializer::FindQueueFamily() {
       physicalDevice, &queueFamilyCount, queueFamilies.data());
 
   for (std::uint32_t i = 0; i < queueFamilyCount; ++i) {
-    if (queueFamilies[i].queueFlags == VK_QUEUE_GRAPHICS_BIT)
+    if (queueFamilies[i].queueFlags & VK_QUEUE_GRAPHICS_BIT)
       gfxQueueFamilyIndex = i;
   }
 
@@ -142,7 +142,7 @@ void core::vk::VulkanInitializer::CreateDevice() {
     .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
     .queueFamilyIndex = gfxQueueFamilyIndex,
     .queueCount = 1,
-    .pQueuePriorities = nullptr,
+    .pQueuePriorities = queuePriorities.data(),
   };
 
   VkDeviceCreateInfo info{
@@ -154,12 +154,16 @@ void core::vk::VulkanInitializer::CreateDevice() {
   VK_CHECK(vkCreateDevice(physicalDevice, &info, nullptr, &device));
 
   vkGetDeviceQueue(device, gfxQueueFamilyIndex, 0, &gfxQueue);
+
+  deletionQueue.Push([this]() { vkDestroyDevice(device, nullptr); });
 }
 
 void core::vk::VulkanInitializer::Init() {
   CreateInstance();
   CreateDebugMessenger();
   PickPhysicalDevice();
+  FindQueueFamily();
+  CreateDevice();
 }
 
 void core::vk::VulkanInitializer::Destroy() { deletionQueue.CleanUp(); }
