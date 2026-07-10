@@ -12,11 +12,10 @@ set(PROJECT NetworkRenderer)
 
 project(${PROJECT})
 
-find_package(Vulkan REQUIRED)
-
 add_subdirectory(libs/fmt ${CMAKE_BINARY_DIR}/libs/fmt)
 add_subdirectory(libs/glm ${CMAKE_BINARY_DIR}/libs/glm)
 add_subdirectory(libs/SDL ${CMAKE_BINARY_DIR}/libs/SDL)
+add_subdirectory(libs/volk ${CMAKE_BINARY_DIR}/libs/volk)
 
 add_subdirectory(server)
 add_subdirectory(client)

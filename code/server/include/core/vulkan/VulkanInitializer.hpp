@@ -3,7 +3,7 @@
 #include "core/vulkan/DeletionQueue.hpp"
 #include "core/vulkan/VulkanHelper.hpp"
 
-#include <vulkan/vulkan.h>
+#include "volk.h"
 
 #include <array>
 #include <cstdint>
@@ -27,7 +27,9 @@ private:
   VkQueue gfxQueue;
   VkDevice device;
 
+  void InitVolk();
   void CreateInstance();
+  void LoadInstanceFunctions();
   void CreateDebugMessenger();
   void PickPhysicalDevice();
   void FindQueueFamily();

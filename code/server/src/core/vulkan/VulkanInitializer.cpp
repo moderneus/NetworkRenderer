@@ -3,6 +3,14 @@
 
 #include <map>
 
+void core::vk::VulkanInitializer::InitVolk() {
+  if (volkInitialize() != VK_SUCCESS) {
+    fmt::print(fmt::fg(fmt::color::dark_red),
+        "[VULKAN] Failed to initialize Vulkan: there is no one installed\n");
+    std::abort();
+  }
+}
+
 void core::vk::VulkanInitializer::CreateInstance() {
   VkApplicationInfo appInfo{
     .sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
@@ -51,32 +59,16 @@ void core::vk::VulkanInitializer::CreateInstance() {
   deletionQueue.Push([this]() { vkDestroyInstance(instance, nullptr); });
 }
 
+void core::vk::VulkanInitializer::LoadInstanceFunctions() {
+  volkLoadInstance(instance);
+}
+
 void core::vk::VulkanInitializer::CreateDebugMessenger() {
-  PFN_vkCreateDebugUtilsMessengerEXT pfnVkCreateDebugUtilsMessengerEXT;
-  pfnVkCreateDebugUtilsMessengerEXT =
-      (PFN_vkCreateDebugUtilsMessengerEXT)(vkGetInstanceProcAddr(
-          instance, "vkCreateDebugUtilsMessengerEXT"));
-
-  if (!pfnVkCreateDebugUtilsMessengerEXT)
-    fmt::print(fmt::fg(fmt::color::dark_red),
-        "[VULKAN] ERROR: Cannot create a DebugMessenger: "
-        "pfnVkCreateDebugUtilsMessengerEXT is nullptr\n");
-
-  VK_CHECK(pfnVkCreateDebugUtilsMessengerEXT(
+  VK_CHECK(vkCreateDebugUtilsMessengerEXT(
       instance, &debugMessengerInfo, nullptr, &debugMessenger));
 
   deletionQueue.Push([this]() {
-    PFN_vkDestroyDebugUtilsMessengerEXT pfnVkDestroyDebugUtilsMessengerEXT;
-    pfnVkDestroyDebugUtilsMessengerEXT =
-        (PFN_vkDestroyDebugUtilsMessengerEXT)(vkGetInstanceProcAddr(
-            instance, "vkDestroyDebugUtilsMessengerEXT"));
-
-    if (!pfnVkDestroyDebugUtilsMessengerEXT)
-      fmt::print(fmt::fg(fmt::color::dark_red),
-          "[VULKAN] ERROR: Cannot destroy a debug messenger: "
-          "pfnVkDestroyDebugUtilsMessengerEXT is nullptr\n");
-
-    pfnVkDestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
+    vkDestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
   });
 }
 
@@ -159,7 +151,9 @@ void core::vk::VulkanInitializer::CreateDevice() {
 }
 
 void core::vk::VulkanInitializer::Init() {
+  InitVolk();
   CreateInstance();
+  LoadInstanceFunctions();
   CreateDebugMessenger();
   PickPhysicalDevice();
   FindQueueFamily();

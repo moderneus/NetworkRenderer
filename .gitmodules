@@ -10,3 +10,6 @@
 [submodule "code/libs/SDL"]
 	path = code/libs/SDL
 	url = https://github.com/libsdl-org/SDL.git
+[submodule "code/libs/volk"]
+	path = code/libs/volk
+	url = https://github.com/zeux/volk.git
