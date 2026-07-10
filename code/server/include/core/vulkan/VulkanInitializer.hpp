@@ -5,6 +5,8 @@
 
 #include "volk.h"
 
+#include "vk_mem_alloc.h"
+
 #include <array>
 #include <cstdint>
 
@@ -26,14 +28,17 @@ private:
   std::array<const float, 1> queuePriorities = { 1.0 };
   VkQueue gfxQueue;
   VkDevice device;
+  VmaAllocator allocator;
 
   void InitVolk();
   void CreateInstance();
-  void LoadInstanceFunctions();
+  void LoadInstanceFunctions() { volkLoadInstance(instance); }
   void CreateDebugMessenger();
   void PickPhysicalDevice();
   void FindQueueFamily();
   void CreateDevice();
+  void LoadDeviceFunctions() { volkLoadDevice(device); }
+  void CreateAllocator();
 
 public:
   void Init();

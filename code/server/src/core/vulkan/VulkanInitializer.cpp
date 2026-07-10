@@ -59,10 +59,6 @@ void core::vk::VulkanInitializer::CreateInstance() {
   deletionQueue.Push([this]() { vkDestroyInstance(instance, nullptr); });
 }
 
-void core::vk::VulkanInitializer::LoadInstanceFunctions() {
-  volkLoadInstance(instance);
-}
-
 void core::vk::VulkanInitializer::CreateDebugMessenger() {
   VK_CHECK(vkCreateDebugUtilsMessengerEXT(
       instance, &debugMessengerInfo, nullptr, &debugMessenger));
@@ -150,6 +146,25 @@ void core::vk::VulkanInitializer::CreateDevice() {
   deletionQueue.Push([this]() { vkDestroyDevice(device, nullptr); });
 }
 
+void core::vk::VulkanInitializer::CreateAllocator() {
+  VmaVulkanFunctions vulkanFunctions{
+    .vkGetInstanceProcAddr = vkGetInstanceProcAddr,
+    .vkGetDeviceProcAddr = vkGetDeviceProcAddr,
+  };
+
+  VmaAllocatorCreateInfo info{
+    .physicalDevice = physicalDevice,
+    .device = device,
+    .pVulkanFunctions = &vulkanFunctions,
+    .instance = instance,
+    .vulkanApiVersion = VK_MAKE_API_VERSION(0, 1, 4, 0),
+  };
+
+  VK_CHECK(vmaCreateAllocator(&info, &allocator));
+
+  deletionQueue.Push([this]() { vmaDestroyAllocator(allocator); });
+}
+
 void core::vk::VulkanInitializer::Init() {
   InitVolk();
   CreateInstance();
@@ -158,6 +173,8 @@ void core::vk::VulkanInitializer::Init() {
   PickPhysicalDevice();
   FindQueueFamily();
   CreateDevice();
+  LoadDeviceFunctions();
+  CreateAllocator();
 }
 
 void core::vk::VulkanInitializer::Destroy() { deletionQueue.CleanUp(); }
