@@ -14,16 +14,19 @@ bool core::vk::VulkanHelper::CheckValidationLayersSupport(
   std::vector<VkLayerProperties> availableLayers(layersCount);
   vkEnumerateInstanceLayerProperties(&layersCount, availableLayers.data());
 
-  bool isFound = false;
-
   for (const char *layerName : layerNames) {
+    bool isFound = false;
+
     for (const auto &layer : availableLayers) {
       if (strcmp(layerName, layer.layerName) == 0)
         isFound = true;
     }
+
+    if (!isFound)
+      return false;
   }
 
-  return isFound;
+  return true;
 }
 
 bool core::vk::VulkanHelper::CheckExtensionsSupport(
@@ -35,16 +38,19 @@ bool core::vk::VulkanHelper::CheckExtensionsSupport(
   vkEnumerateInstanceExtensionProperties(
       nullptr, &extensionCount, availableExtensions.data());
 
-  bool isFound = false;
-
   for (const char *extensionName : extensionNames) {
+    bool isFound = false;
+
     for (const auto &extension : availableExtensions) {
       if (strcmp(extensionName, extension.extensionName) == 0)
         isFound = true;
     }
+
+    if (!isFound)
+      return false;
   }
 
-  return isFound;
+  return true;
 }
 
 VKAPI_ATTR VkBool32 VKAPI_CALL core::vk::VulkanHelper::Callback(
