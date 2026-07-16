@@ -36,21 +36,10 @@ void core::vk::VulkanInitializer::CreateInstance() {
     info.ppEnabledLayerNames = layerNames.data();
   }
 
-  if (vulkanHelper.CheckExtensionsSupport(extensionNames)) {
+  if (vulkanHelper.CheckInstanceExtensionsSupport(instanceExtensionNames)) {
     info.enabledExtensionCount =
-        static_cast<std::uint32_t>(extensionNames.size());
-    info.ppEnabledExtensionNames = extensionNames.data();
-    debugMessengerInfo = {
-      .sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
-      .messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
-                         VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT |
-                         VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
-                         VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT,
-      .messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
-                     VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT,
-      .pfnUserCallback = vulkanHelper.Callback,
-      .pUserData = nullptr,
-    };
+        static_cast<std::uint32_t>(instanceExtensionNames.size());
+    info.ppEnabledExtensionNames = instanceExtensionNames.data();
     info.pNext = &debugMessengerInfo;
   }
 
@@ -88,20 +77,9 @@ void core::vk::VulkanInitializer::PickPhysicalDevice() {
 
   std::multimap<std::uint32_t, VkPhysicalDevice> candidates;
 
-  for (const auto &physicalDevice : physicalDevices) {
-    std::uint32_t score = 0;
-
-    VkPhysicalDeviceProperties properties;
-    vkGetPhysicalDeviceProperties(physicalDevice, &properties);
-
-    if (properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
-      score += 1000;
-
-    score += properties.limits.maxSamplerAnisotropy;
-    score += properties.limits.maxImageDimension2D;
-
-    candidates.insert(std::make_pair(score, physicalDevice));
-  }
+  for (const auto &physicalDevice : physicalDevices)
+    candidates.insert(std::make_pair(
+        vulkanHelper.RatePhysicalDevice(physicalDevice), physicalDevice));
 
   physicalDevice = candidates.rbegin()->second;
 }
@@ -133,8 +111,17 @@ void core::vk::VulkanInitializer::CreateDevice() {
     .pQueuePriorities = queuePriorities.data(),
   };
 
+  if (vulkanHelper.CheckDeviceExtensionsSupport(
+          physicalDevice, deviceExtensionNames)) {
+    dynamicRenderingFeature = {
+      .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES_KHR,
+      .dynamicRendering = VK_TRUE,
+    };
+  }
+
   VkDeviceCreateInfo info{
     .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+    .pNext = &dynamicRenderingFeature,
     .queueCreateInfoCount = 1,
     .pQueueCreateInfos = &queueInfo,
   };

@@ -14,21 +14,44 @@ namespace core::vk {
 
 class VulkanInitializer {
 private:
+  friend class VulkanHelper;
+
   std::vector<const char *> layerNames = { "VK_LAYER_KHRONOS_validation" };
-  std::vector<const char *> extensionNames = { "VK_EXT_debug_utils" };
+  std::vector<const char *> instanceExtensionNames = {
+    VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
+  };
+  std::vector<const char *> deviceExtensionNames = {
+    VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
+  };
 
   DeletionQueue deletionQueue;
   VulkanHelper vulkanHelper;
 
   VkInstance instance = VK_NULL_HANDLE;
+
   VkDebugUtilsMessengerEXT debugMessenger = VK_NULL_HANDLE;
-  VkDebugUtilsMessengerCreateInfoEXT debugMessengerInfo;
+  VkDebugUtilsMessengerCreateInfoEXT debugMessengerInfo = {
+    .sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
+    .messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
+                       VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT |
+                       VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
+                       VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT,
+    .messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
+                   VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT,
+    .pfnUserCallback = vulkanHelper.Callback,
+    .pUserData = nullptr,
+  };
+
   VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
+  VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamicRenderingFeature;
+
+  VkDevice device = VK_NULL_HANDLE;
   std::uint32_t gfxQueueFamilyIndex = -1;
   std::array<const float, 1> queuePriorities = { 1.0 };
-  VkQueue gfxQueue;
-  VkDevice device;
-  VmaAllocator allocator;
+
+  VkQueue gfxQueue = VK_NULL_HANDLE;
+
+  VmaAllocator allocator = VK_NULL_HANDLE;
 
   void InitVolk();
   void CreateInstance();
