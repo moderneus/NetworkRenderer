@@ -36,21 +36,10 @@ void core::vk::VulkanInitializer::CreateInstance() {
     info.ppEnabledLayerNames = layerNames.data();
   }
 
-  if (vulkanHelper.CheckExtensionsSupport(extensionNames)) {
+  if (vulkanHelper.CheckInstanceExtensionsSupport(instanceExtensionNames)) {
     info.enabledExtensionCount =
-        static_cast<std::uint32_t>(extensionNames.size());
-    info.ppEnabledExtensionNames = extensionNames.data();
-    debugMessengerInfo = {
-      .sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
-      .messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
-                         VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT |
-                         VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
-                         VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT,
-      .messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
-                     VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT,
-      .pfnUserCallback = vulkanHelper.Callback,
-      .pUserData = nullptr,
-    };
+        static_cast<std::uint32_t>(instanceExtensionNames.size());
+    info.ppEnabledExtensionNames = instanceExtensionNames.data();
     info.pNext = &debugMessengerInfo;
   }
 
@@ -88,20 +77,9 @@ void core::vk::VulkanInitializer::PickPhysicalDevice() {
 
   std::multimap<std::uint32_t, VkPhysicalDevice> candidates;
 
-  for (const auto &physicalDevice : physicalDevices) {
-    std::uint32_t score = 0;
-
-    VkPhysicalDeviceProperties properties;
-    vkGetPhysicalDeviceProperties(physicalDevice, &properties);
-
-    if (properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
-      score += 1000;
-
-    score += properties.limits.maxSamplerAnisotropy;
-    score += properties.limits.maxImageDimension2D;
-
-    candidates.insert(std::make_pair(score, physicalDevice));
-  }
+  for (const auto &physicalDevice : physicalDevices)
+    candidates.insert(std::make_pair(
+        vulkanHelper.RatePhysicalDevice(physicalDevice), physicalDevice));
 
   physicalDevice = candidates.rbegin()->second;
 }
@@ -133,8 +111,17 @@ void core::vk::VulkanInitializer::CreateDevice() {
     .pQueuePriorities = queuePriorities.data(),
   };
 
+  if (vulkanHelper.CheckDeviceExtensionsSupport(
+          physicalDevice, deviceExtensionNames)) {
+    dynamicRenderingFeature = {
+      .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES_KHR,
+      .dynamicRendering = VK_TRUE,
+    };
+  }
+
   VkDeviceCreateInfo info{
     .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+    .pNext = &dynamicRenderingFeature,
     .queueCreateInfoCount = 1,
     .pQueueCreateInfos = &queueInfo,
   };
@@ -165,6 +152,71 @@ void core::vk::VulkanInitializer::CreateAllocator() {
   deletionQueue.Push([this]() { vmaDestroyAllocator(allocator); });
 }
 
+void core::vk::VulkanInitializer::CreateImage() {
+
+  VkImageCreateInfo imageInfo{
+    .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+    .imageType = VK_IMAGE_TYPE_2D,
+    .format = VK_FORMAT_UNDEFINED,
+    /* this will be replaced by the client's window extent */
+    .extent = { 800, 600, 1 },
+    .mipLevels = 1,
+    .arrayLayers = 1,
+    .samples = VK_SAMPLE_COUNT_1_BIT,
+    .tiling = VK_IMAGE_TILING_OPTIMAL,
+    .usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+    .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+    .queueFamilyIndexCount = 1,
+    .pQueueFamilyIndices = &gfxQueueFamilyIndex,
+    .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+  };
+
+  if (vulkanHelper.CheckImageFormatSupport(colorImageFormat, physicalDevice))
+    imageInfo.format = colorImageFormat;
+  else
+    fmt::print(fmt::fg(fmt::color::dark_red),
+        "[VULKAN] Failed to create an image: "
+        "required format is not supported\n");
+
+  VmaAllocationCreateInfo allocationInfo{
+    .flags = VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT |
+             VMA_ALLOCATION_CREATE_MAPPED_BIT,
+    .usage = VMA_MEMORY_USAGE_GPU_ONLY,
+    .requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+    .preferredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+    .memoryTypeBits = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+    .priority = 1.0,
+  };
+
+  vmaCreateImage(allocator, &imageInfo, &allocationInfo, &colorImage,
+      &colorImageAllocation, nullptr);
+
+  deletionQueue.Push([this]() {
+    vmaDestroyImage(allocator, colorImage, colorImageAllocation);
+  });
+}
+
+void core::vk::VulkanInitializer::CreateImageView() {
+  VkImageViewCreateInfo info{
+    .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+    .image = colorImage,
+    .viewType = VK_IMAGE_VIEW_TYPE_2D,
+    .format = colorImageFormat,
+    .components = {
+      VK_COMPONENT_SWIZZLE_IDENTITY,
+      VK_COMPONENT_SWIZZLE_IDENTITY,
+      VK_COMPONENT_SWIZZLE_IDENTITY,
+      VK_COMPONENT_SWIZZLE_IDENTITY,
+    },
+    .subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1, },
+  };
+
+  vkCreateImageView(device, &info, nullptr, &colorImageView);
+
+  deletionQueue.Push(
+      [this]() { vkDestroyImageView(device, colorImageView, nullptr); });
+}
+
 void core::vk::VulkanInitializer::Init() {
   InitVolk();
   CreateInstance();
@@ -175,6 +227,8 @@ void core::vk::VulkanInitializer::Init() {
   CreateDevice();
   LoadDeviceFunctions();
   CreateAllocator();
+  CreateImage();
+  CreateImageView();
 }
 
 void core::vk::VulkanInitializer::Destroy() { deletionQueue.CleanUp(); }
