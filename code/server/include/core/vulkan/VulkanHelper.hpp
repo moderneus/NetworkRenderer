@@ -20,6 +20,9 @@ class VulkanHelper {
   bool CheckDeviceExtensionsSupport(const VkPhysicalDevice &physicalDevice,
       const std::vector<const char *> &extensionNames);
 
+  bool CheckImageFormatSupport(
+      const VkFormat &format, const VkPhysicalDevice &physicalDevice);
+
   std::uint32_t RatePhysicalDevice(const VkPhysicalDevice &physicalDevice);
 
   static VKAPI_ATTR VkBool32 VKAPI_CALL Callback(

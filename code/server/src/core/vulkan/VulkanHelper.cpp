@@ -144,3 +144,16 @@ std::uint32_t core::vk::VulkanHelper::RatePhysicalDevice(
 
   return score;
 }
+
+bool core::vk::VulkanHelper::CheckImageFormatSupport(
+    const VkFormat &format, const VkPhysicalDevice &physicalDevice) {
+  VkImageFormatProperties properties;
+  VkResult result = vkGetPhysicalDeviceImageFormatProperties(physicalDevice,
+      format, VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_LINEAR,
+      VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, 0, &properties);
+
+  if (result == VK_ERROR_FORMAT_NOT_SUPPORTED)
+    return false;
+
+  return true;
+}
