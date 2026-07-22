@@ -53,6 +53,11 @@ private:
 
   VmaAllocator allocator = VK_NULL_HANDLE;
 
+  VkFormat colorImageFormat = VK_FORMAT_R8G8B8A8_SRGB;
+  VkImage colorImage;
+  VmaAllocation colorImageAllocation;
+  VkImageView colorImageView;
+
   void InitVolk();
   void CreateInstance();
   void LoadInstanceFunctions() { volkLoadInstance(instance); }
@@ -62,6 +67,8 @@ private:
   void CreateDevice();
   void LoadDeviceFunctions() { volkLoadDevice(device); }
   void CreateAllocator();
+  void CreateImage();
+  void CreateImageView();
 
 public:
   void Init();

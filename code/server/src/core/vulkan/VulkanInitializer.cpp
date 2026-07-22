@@ -152,6 +152,71 @@ void core::vk::VulkanInitializer::CreateAllocator() {
   deletionQueue.Push([this]() { vmaDestroyAllocator(allocator); });
 }
 
+void core::vk::VulkanInitializer::CreateImage() {
+
+  VkImageCreateInfo imageInfo{
+    .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+    .imageType = VK_IMAGE_TYPE_2D,
+    .format = VK_FORMAT_UNDEFINED,
+    /* this will be replaced by the client's window extent */
+    .extent = { 800, 600, 1 },
+    .mipLevels = 1,
+    .arrayLayers = 1,
+    .samples = VK_SAMPLE_COUNT_1_BIT,
+    .tiling = VK_IMAGE_TILING_OPTIMAL,
+    .usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+    .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+    .queueFamilyIndexCount = 1,
+    .pQueueFamilyIndices = &gfxQueueFamilyIndex,
+    .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+  };
+
+  if (vulkanHelper.CheckImageFormatSupport(colorImageFormat, physicalDevice))
+    imageInfo.format = colorImageFormat;
+  else
+    fmt::print(fmt::fg(fmt::color::dark_red),
+        "[VULKAN] Failed to create an image: "
+        "required format is not supported\n");
+
+  VmaAllocationCreateInfo allocationInfo{
+    .flags = VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT |
+             VMA_ALLOCATION_CREATE_MAPPED_BIT,
+    .usage = VMA_MEMORY_USAGE_GPU_ONLY,
+    .requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+    .preferredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+    .memoryTypeBits = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+    .priority = 1.0,
+  };
+
+  vmaCreateImage(allocator, &imageInfo, &allocationInfo, &colorImage,
+      &colorImageAllocation, nullptr);
+
+  deletionQueue.Push([this]() {
+    vmaDestroyImage(allocator, colorImage, colorImageAllocation);
+  });
+}
+
+void core::vk::VulkanInitializer::CreateImageView() {
+  VkImageViewCreateInfo info{
+    .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+    .image = colorImage,
+    .viewType = VK_IMAGE_VIEW_TYPE_2D,
+    .format = colorImageFormat,
+    .components = {
+      VK_COMPONENT_SWIZZLE_IDENTITY,
+      VK_COMPONENT_SWIZZLE_IDENTITY,
+      VK_COMPONENT_SWIZZLE_IDENTITY,
+      VK_COMPONENT_SWIZZLE_IDENTITY,
+    },
+    .subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1, },
+  };
+
+  vkCreateImageView(device, &info, nullptr, &colorImageView);
+
+  deletionQueue.Push(
+      [this]() { vkDestroyImageView(device, colorImageView, nullptr); });
+}
+
 void core::vk::VulkanInitializer::Init() {
   InitVolk();
   CreateInstance();
@@ -162,6 +227,8 @@ void core::vk::VulkanInitializer::Init() {
   CreateDevice();
   LoadDeviceFunctions();
   CreateAllocator();
+  CreateImage();
+  CreateImageView();
 }
 
 void core::vk::VulkanInitializer::Destroy() { deletionQueue.CleanUp(); }
