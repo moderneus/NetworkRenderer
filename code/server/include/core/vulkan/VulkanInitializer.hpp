@@ -58,6 +58,9 @@ private:
   VmaAllocation colorImageAllocation;
   VkImageView colorImageView;
 
+  VkCommandPool commandPool;
+  VkCommandBuffer commandBuffer;
+
   void InitVolk();
   void CreateInstance();
   void LoadInstanceFunctions() { volkLoadInstance(instance); }
@@ -69,6 +72,8 @@ private:
   void CreateAllocator();
   void CreateImage();
   void CreateImageView();
+  void CreateCommandPool();
+  void CreateCommandBuffer();
 
 public:
   void Init();

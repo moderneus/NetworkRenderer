@@ -153,7 +153,6 @@ void core::vk::VulkanInitializer::CreateAllocator() {
 }
 
 void core::vk::VulkanInitializer::CreateImage() {
-
   VkImageCreateInfo imageInfo{
     .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
     .imageType = VK_IMAGE_TYPE_2D,
@@ -217,6 +216,30 @@ void core::vk::VulkanInitializer::CreateImageView() {
       [this]() { vkDestroyImageView(device, colorImageView, nullptr); });
 }
 
+void core::vk::VulkanInitializer::CreateCommandPool() {
+  VkCommandPoolCreateInfo info{
+    .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+    .flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT,
+    .queueFamilyIndex = gfxQueueFamilyIndex,
+  };
+
+  vkCreateCommandPool(device, &info, nullptr, &commandPool);
+
+  deletionQueue.Push(
+      [this]() { vkDestroyCommandPool(device, commandPool, nullptr); });
+}
+
+void core::vk::VulkanInitializer::CreateCommandBuffer() {
+  VkCommandBufferAllocateInfo info{
+    .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+    .commandPool = commandPool,
+    .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+    .commandBufferCount = 1,
+  };
+
+  vkAllocateCommandBuffers(device, &info, &commandBuffer);
+}
+
 void core::vk::VulkanInitializer::Init() {
   InitVolk();
   CreateInstance();
@@ -229,6 +252,8 @@ void core::vk::VulkanInitializer::Init() {
   CreateAllocator();
   CreateImage();
   CreateImageView();
+  CreateCommandPool();
+  CreateCommandBuffer();
 }
 
 void core::vk::VulkanInitializer::Destroy() { deletionQueue.CleanUp(); }
