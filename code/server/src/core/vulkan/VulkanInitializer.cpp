@@ -1,6 +1,7 @@
 #include "core/vulkan/VulkanInitializer.hpp"
 #include "utils/Defines.hpp"
 
+#include <array>
 #include <map>
 
 void core::vk::VulkanInitializer::InitVolk() {
@@ -210,10 +211,98 @@ void core::vk::VulkanInitializer::CreateImageView() {
     .subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1, },
   };
 
-  vkCreateImageView(device, &info, nullptr, &colorImageView);
+  VK_CHECK(vkCreateImageView(device, &info, nullptr, &colorImageView));
 
   deletionQueue.Push(
       [this]() { vkDestroyImageView(device, colorImageView, nullptr); });
+}
+
+void core::vk::VulkanInitializer::CreateShaderModules() {
+  VkShaderModuleCreateInfo vertexShaderInfo{
+    .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+    .codeSize = static_cast<std::size_t>(vertexShaderCode.size()),
+    .pCode = reinterpret_cast<const std::uint32_t *>(vertexShaderCode.data()),
+  };
+
+  VkShaderModuleCreateInfo fragmentShaderInfo{
+    .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+    .codeSize = static_cast<std::size_t>(fragmentShaderCode.size()),
+    .pCode = reinterpret_cast<const std::uint32_t *>(fragmentShaderCode.data()),
+  };
+
+  VK_CHECK(vkCreateShaderModule(device, &vertexShaderInfo, nullptr, &vertexShader));
+  VK_CHECK(vkCreateShaderModule(device, &fragmentShaderInfo, nullptr, &fragmentShader));
+
+  deletionQueue.Push(
+      [this]() { vkDestroyShaderModule(device, vertexShader, nullptr); });
+  deletionQueue.Push(
+      [this]() { vkDestroyShaderModule(device, fragmentShader, nullptr); });
+}
+
+void core::vk::VulkanInitializer::CreatePipelineLayout() {
+  VkPipelineLayoutCreateInfo info{
+    .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+  };
+
+  vkCreatePipelineLayout(device, &info, nullptr, &pipelineLayout);
+
+  deletionQueue.Push(
+      [this]() { vkDestroyPipelineLayout(device, pipelineLayout, nullptr); });
+}
+
+void core::vk::VulkanInitializer::CreatePipeline() {
+  std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages;
+  shaderStages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+  shaderStages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
+  shaderStages[0].module = vertexShader;
+  shaderStages[0].pName = "main";
+
+  shaderStages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+  shaderStages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+  shaderStages[1].module = fragmentShader;
+  shaderStages[1].pName = "main";
+
+  VkVertexInputBindingDescription vertexBindingDescription{
+    .binding = 0,
+    .stride = sizeof(VulkanHelper::Vertex),
+    .inputRate = VK_VERTEX_INPUT_RATE_VERTEX,
+  };
+
+  std::array<VkVertexInputAttributeDescription, 2> vertexAttributeDescription;
+  vertexAttributeDescription[0].binding = 0;
+  vertexAttributeDescription[0].location = 0;
+  vertexAttributeDescription[0].format = VK_FORMAT_R32G32B32_SFLOAT;
+  vertexAttributeDescription[0].offset =
+      offsetof(VulkanHelper::Vertex, position);
+
+  vertexAttributeDescription[1].binding = 0;
+  vertexAttributeDescription[1].location = 1;
+  vertexAttributeDescription[1].format = VK_FORMAT_R32G32B32_SFLOAT;
+  vertexAttributeDescription[1].offset = offsetof(VulkanHelper::Vertex, color);
+
+  VkPipelineVertexInputStateCreateInfo vertexInputInfo{
+    .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
+    .vertexBindingDescriptionCount = 1,
+    .pVertexBindingDescriptions = &vertexBindingDescription,
+    .vertexAttributeDescriptionCount =
+        static_cast<std::uint32_t>(vertexAttributeDescription.size()),
+    .pVertexAttributeDescriptions = vertexAttributeDescription.data(),
+  };
+
+  VkPipelineInputAssemblyStateCreateInfo inputAssemblyInfo{
+    .sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
+    .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+    .primitiveRestartEnable = VK_FALSE,
+  };
+
+  VkGraphicsPipelineCreateInfo info{
+    .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+    .stageCount = static_cast<std::uint32_t>(shaderStages.size()),
+    .pStages = shaderStages.data(),
+    .pVertexInputState = &vertexInputInfo,
+    .pInputAssemblyState = &inputAssemblyInfo,
+    .layout = pipelineLayout,
+  };
 }
 
 void core::vk::VulkanInitializer::CreateCommandPool() {
@@ -223,7 +312,7 @@ void core::vk::VulkanInitializer::CreateCommandPool() {
     .queueFamilyIndex = gfxQueueFamilyIndex,
   };
 
-  vkCreateCommandPool(device, &info, nullptr, &commandPool);
+  VK_CHECK(vkCreateCommandPool(device, &info, nullptr, &commandPool));
 
   deletionQueue.Push(
       [this]() { vkDestroyCommandPool(device, commandPool, nullptr); });
@@ -237,7 +326,7 @@ void core::vk::VulkanInitializer::CreateCommandBuffer() {
     .commandBufferCount = 1,
   };
 
-  vkAllocateCommandBuffers(device, &info, &commandBuffer);
+  VK_CHECK(vkAllocateCommandBuffers(device, &info, &commandBuffer));
 }
 
 void core::vk::VulkanInitializer::Init() {
