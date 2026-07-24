@@ -1,5 +1,7 @@
 #pragma once
 
+#include "glm/vec2.hpp"
+#include "glm/vec3.hpp"
 #include "volk.h"
 
 #include <cstdint>
@@ -9,6 +11,11 @@ namespace core::vk {
 
 class VulkanHelper {
   friend class VulkanInitializer;
+
+  struct Vertex {
+    glm::vec2 position;
+    glm::vec3 color;
+  };
 
   bool CheckValidationLayersSupport(
       const std::vector<const char *> &layerNames);
