@@ -2,6 +2,7 @@
 
 #include "core/vulkan/DeletionQueue.hpp"
 #include "core/vulkan/VulkanHelper.hpp"
+#include "utils/FileHelper.hpp"
 
 #include "volk.h"
 
@@ -16,16 +17,23 @@ class VulkanInitializer {
 private:
   friend class VulkanHelper;
 
-  std::vector<const char *> layerNames = { "VK_LAYER_KHRONOS_validation" };
-  std::vector<const char *> instanceExtensionNames = {
+  const std::vector<const char *> layerNames = {
+    "VK_LAYER_KHRONOS_validation"
+  };
+  const std::vector<const char *> instanceExtensionNames = {
     VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
   };
-  std::vector<const char *> deviceExtensionNames = {
+  const std::vector<const char *> deviceExtensionNames = {
     VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
   };
+  const std::vector<char> vertexShaderCode =
+      fileHelper.ReadFile("shaders/VertexShader.spv");
+  const std::vector<char> fragmentShaderCode =
+      fileHelper.ReadFile("shaders/FragmentShader.spv");
 
   DeletionQueue deletionQueue;
   VulkanHelper vulkanHelper;
+  utils::file::FileHelper fileHelper;
 
   VkInstance instance = VK_NULL_HANDLE;
 
@@ -58,6 +66,12 @@ private:
   VmaAllocation colorImageAllocation;
   VkImageView colorImageView;
 
+  VkShaderModule vertexShader;
+  VkShaderModule fragmentShader;
+
+  VkPipelineLayout pipelineLayout;
+  VkPipeline pipeline;
+
   VkCommandPool commandPool;
   VkCommandBuffer commandBuffer;
 
@@ -72,6 +86,9 @@ private:
   void CreateAllocator();
   void CreateImage();
   void CreateImageView();
+  void CreateShaderModules();
+  void CreatePipelineLayout();
+  void CreatePipeline();
   void CreateCommandPool();
   void CreateCommandBuffer();
 
