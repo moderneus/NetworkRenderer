@@ -17,6 +17,10 @@ class VulkanInitializer {
 private:
   friend class VulkanHelper;
 
+  DeletionQueue deletionQueue;
+  VulkanHelper vulkanHelper;
+  utils::file::FileHelper fileHelper;
+
   const std::vector<const char *> layerNames = {
     "VK_LAYER_KHRONOS_validation"
   };
@@ -27,13 +31,9 @@ private:
     VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
   };
   const std::vector<char> vertexShaderCode =
-      fileHelper.ReadFile("shaders/VertexShader.spv");
+      fileHelper.ReadFile("shaders/VertexShader.vert.spv");
   const std::vector<char> fragmentShaderCode =
-      fileHelper.ReadFile("shaders/FragmentShader.spv");
-
-  DeletionQueue deletionQueue;
-  VulkanHelper vulkanHelper;
-  utils::file::FileHelper fileHelper;
+      fileHelper.ReadFile("shaders/FragmentShader.frag.spv");
 
   VkInstance instance = VK_NULL_HANDLE;
 
@@ -61,19 +61,20 @@ private:
 
   VmaAllocator allocator = VK_NULL_HANDLE;
 
+  VkExtent3D windowExtent;
   VkFormat colorImageFormat = VK_FORMAT_R8G8B8A8_SRGB;
-  VkImage colorImage;
+  VkImage colorImage = VK_NULL_HANDLE;
   VmaAllocation colorImageAllocation;
-  VkImageView colorImageView;
+  VkImageView colorImageView = VK_NULL_HANDLE;
 
-  VkShaderModule vertexShader;
-  VkShaderModule fragmentShader;
+  VkShaderModule vertexShader = VK_NULL_HANDLE;
+  VkShaderModule fragmentShader = VK_NULL_HANDLE;
 
-  VkPipelineLayout pipelineLayout;
-  VkPipeline pipeline;
+  VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
+  VkPipeline pipeline = VK_NULL_HANDLE;
 
-  VkCommandPool commandPool;
-  VkCommandBuffer commandBuffer;
+  VkCommandPool commandPool = VK_NULL_HANDLE;
+  VkCommandBuffer commandBuffer = VK_NULL_HANDLE;
 
   void InitVolk();
   void CreateInstance();
