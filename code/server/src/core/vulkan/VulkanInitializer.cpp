@@ -154,12 +154,14 @@ void core::vk::VulkanInitializer::CreateAllocator() {
 }
 
 void core::vk::VulkanInitializer::CreateImage() {
+  /* this will be replaced by the client's window extent */
+  windowExtent = { 800, 600, 1 };
+
   VkImageCreateInfo imageInfo{
     .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
     .imageType = VK_IMAGE_TYPE_2D,
     .format = VK_FORMAT_UNDEFINED,
-    /* this will be replaced by the client's window extent */
-    .extent = { 800, 600, 1 },
+    .extent = windowExtent,
     .mipLevels = 1,
     .arrayLayers = 1,
     .samples = VK_SAMPLE_COUNT_1_BIT,
@@ -230,8 +232,10 @@ void core::vk::VulkanInitializer::CreateShaderModules() {
     .pCode = reinterpret_cast<const std::uint32_t *>(fragmentShaderCode.data()),
   };
 
-  VK_CHECK(vkCreateShaderModule(device, &vertexShaderInfo, nullptr, &vertexShader));
-  VK_CHECK(vkCreateShaderModule(device, &fragmentShaderInfo, nullptr, &fragmentShader));
+  VK_CHECK(
+      vkCreateShaderModule(device, &vertexShaderInfo, nullptr, &vertexShader));
+  VK_CHECK(vkCreateShaderModule(
+      device, &fragmentShaderInfo, nullptr, &fragmentShader));
 
   deletionQueue.Push(
       [this]() { vkDestroyShaderModule(device, vertexShader, nullptr); });
@@ -242,16 +246,20 @@ void core::vk::VulkanInitializer::CreateShaderModules() {
 void core::vk::VulkanInitializer::CreatePipelineLayout() {
   VkPipelineLayoutCreateInfo info{
     .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+    .setLayoutCount = 0,
+    .pSetLayouts = nullptr,
+    .pushConstantRangeCount = 0,
+    .pPushConstantRanges = nullptr,
   };
 
-  vkCreatePipelineLayout(device, &info, nullptr, &pipelineLayout);
+  VK_CHECK(vkCreatePipelineLayout(device, &info, nullptr, &pipelineLayout));
 
   deletionQueue.Push(
       [this]() { vkDestroyPipelineLayout(device, pipelineLayout, nullptr); });
 }
 
 void core::vk::VulkanInitializer::CreatePipeline() {
-  std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages;
+  std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages{};
   shaderStages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
   shaderStages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
   shaderStages[0].module = vertexShader;
@@ -268,7 +276,7 @@ void core::vk::VulkanInitializer::CreatePipeline() {
     .inputRate = VK_VERTEX_INPUT_RATE_VERTEX,
   };
 
-  std::array<VkVertexInputAttributeDescription, 2> vertexAttributeDescription;
+  std::array<VkVertexInputAttributeDescription, 2> vertexAttributeDescription{};
   vertexAttributeDescription[0].binding = 0;
   vertexAttributeDescription[0].location = 0;
   vertexAttributeDescription[0].format = VK_FORMAT_R32G32B32_SFLOAT;
@@ -295,14 +303,97 @@ void core::vk::VulkanInitializer::CreatePipeline() {
     .primitiveRestartEnable = VK_FALSE,
   };
 
+  VkViewport viewport{
+    .x = 0.0f,
+    .y = 0.0f,
+    .width = static_cast<float>(windowExtent.width),
+    .height = static_cast<float>(windowExtent.height),
+    .minDepth = 0.0f,
+    .maxDepth = 1.0f,
+  };
+
+  VkRect2D scissor{
+    .offset = { 0, 0 },
+    .extent = { windowExtent.width, windowExtent.height },
+  };
+
+  VkPipelineViewportStateCreateInfo viewportInfo{
+    .sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
+    .viewportCount = 1,
+    .pViewports = &viewport,
+    .scissorCount = 1,
+    .pScissors = &scissor,
+  };
+
+  VkPipelineRasterizationStateCreateInfo rasterizationInfo{
+    .sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
+    .depthClampEnable = VK_FALSE,
+    .rasterizerDiscardEnable = VK_FALSE,
+    .polygonMode = VK_POLYGON_MODE_FILL,
+    .cullMode = VK_CULL_MODE_BACK_BIT,
+    .frontFace = VK_FRONT_FACE_CLOCKWISE,
+    .depthBiasEnable = VK_FALSE,
+    .lineWidth = 1.0f,
+  };
+
+  VkPipelineMultisampleStateCreateInfo multisampleInfo{
+    .sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
+    .rasterizationSamples = VK_SAMPLE_COUNT_1_BIT,
+    .sampleShadingEnable = VK_FALSE,
+  };
+
+  VkPipelineColorBlendAttachmentState colorBlendAttachment{
+    .blendEnable = VK_FALSE,
+    .colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
+                      VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
+  };
+
+  VkPipelineColorBlendStateCreateInfo colorBlendInfo{
+    .sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
+    .logicOpEnable = VK_FALSE,
+    .attachmentCount = 1,
+    .pAttachments = &colorBlendAttachment,
+  };
+
+  std::array<VkDynamicState, 2> dynamicStates{ VK_DYNAMIC_STATE_VIEWPORT,
+    VK_DYNAMIC_STATE_SCISSOR };
+
+  VkPipelineDynamicStateCreateInfo dynamicStateInfo{
+    .sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+    .dynamicStateCount = static_cast<std::uint32_t>(dynamicStates.size()),
+    .pDynamicStates = dynamicStates.data(),
+  };
+
+  VkPipelineRenderingCreateInfo renderingInfo{
+    .sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
+    .colorAttachmentCount = 1,
+    .pColorAttachmentFormats = &colorImageFormat,
+    .depthAttachmentFormat = VK_FORMAT_UNDEFINED,
+    .stencilAttachmentFormat = VK_FORMAT_UNDEFINED,
+  };
+
   VkGraphicsPipelineCreateInfo info{
     .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+    .pNext = &renderingInfo,
     .stageCount = static_cast<std::uint32_t>(shaderStages.size()),
     .pStages = shaderStages.data(),
     .pVertexInputState = &vertexInputInfo,
     .pInputAssemblyState = &inputAssemblyInfo,
+    .pViewportState = &viewportInfo,
+    .pRasterizationState = &rasterizationInfo,
+    .pMultisampleState = &multisampleInfo,
+    .pColorBlendState = &colorBlendInfo,
+    .pDynamicState = &dynamicStateInfo,
     .layout = pipelineLayout,
+    .renderPass = VK_NULL_HANDLE,
+    .subpass = 0,
   };
+
+  VK_CHECK(vkCreateGraphicsPipelines(
+      device, VK_NULL_HANDLE, 1, &info, nullptr, &pipeline));
+
+  deletionQueue.Push(
+      [this]() { vkDestroyPipeline(device, pipeline, nullptr); });
 }
 
 void core::vk::VulkanInitializer::CreateCommandPool() {
@@ -341,6 +432,9 @@ void core::vk::VulkanInitializer::Init() {
   CreateAllocator();
   CreateImage();
   CreateImageView();
+  CreateShaderModules();
+  CreatePipelineLayout();
+  CreatePipeline();
   CreateCommandPool();
   CreateCommandBuffer();
 }
